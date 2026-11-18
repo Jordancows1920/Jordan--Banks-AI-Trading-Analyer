@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrendScope AI</title>
+<style>
+:root{--bg:#0b1020;--panel:#131b2e;--panel2:#1a2540;--text:#edf2ff;--muted:#91a0bd;--line:#2a3856;--green:#36d399;--red:#fb7185;--amber:#fbbf24;--blue:#76a9ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#101a2e);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px max(18px,calc((100% - 1120px)/2));border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-size:21px;font-weight:800;letter-spacing:.3px}.brand span{color:var(--blue)}.sub{color:var(--muted);font-size:12px}
+main{max-width:1120px;margin:22px auto;padding:0 16px 50px}.hero{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:27px;margin:0 0 5px}h2{font-size:16px;margin:0 0 14px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:rgba(19,27,46,.96);border:1px solid var(--line);border-radius:16px;padding:17px;min-width:0}.span8{grid-column:span 8}.span4{grid-column:span 4}.span6{grid-column:span 6}.span12{grid-column:span 12}
+label{display:block;color:var(--muted);font-size:12px;margin:9px 0 6px}input,select,button{font:inherit}input[type=text],select,input[type=file]{width:100%;background:#0d1527;color:var(--text);border:1px solid var(--line);padding:11px;border-radius:10px}
+button{border:0;border-radius:10px;background:var(--blue);color:#071020;font-weight:750;padding:11px 14px;cursor:pointer}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button:disabled{opacity:.5;cursor:wait}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.metric{background:var(--panel2);padding:13px;border-radius:12px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:18px;display:block;margin-top:5px}
+.pill{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800;background:#26324a;color:var(--muted)}.bull{color:var(--green)}.bear{color:var(--red)}.neutral{color:var(--amber)}
+ul{padding-left:18px;margin:8px 0}li{margin:7px 0;color:#d8e1f5}.result{line-height:1.5}.pattern{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:9px 0;gap:8px}.pattern:last-child{border:0}
+#preview{max-width:100%;max-height:320px;display:none;border-radius:12px;margin-top:12px;border:1px solid var(--line)}
+.notice{font-size:12px;color:var(--muted);line-height:1.5;background:#101a2c;border-radius:10px;padding:11px}.status{font-size:12px;color:var(--muted)}.status.ok{color:var(--green)}.status.err{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:9px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+@media(max-width:760px){.span8,.span4,.span6{grid-column:span 12}h1{font-size:23px}.card{padding:14px}}
+</style></head>
+<body>
+<header><div><div class="brand">◈ TrendScope <span>AI</span></div><div class="sub">Market intelligence · Technical analysis · Multi-timeframe</div></div><div id="health" class="status">Checking backend…</div></header>
+<main>
+<div class="hero"><div><h1>Market analysis workspace</h1><div class="muted">Evidence-led analysis. You stay in control of every trade.</div></div><span class="pill">MVP · No broker execution</span></div>
+<div class="grid">
+<section class="card span8">
+<h2>Live market analysis</h2>
+<div class="row"><div><label>Market symbol</label><input id="symbol" type="text" value="EUR/USD" placeholder="EUR/USD, GBP/USD, XAU/USD"></div><div><label>Timeframe</label><select id="interval"><option value="15min">M15</option><option value="30min">M30</option><option value="1h" selected>H1</option><option value="4h">H4</option><option value="1day">D1</option><option value="5min">M5</option></select></div></div>
+<div class="row" style="margin-top:12px"><button id="liveBtn" onclick="loadLive()">Analyse live candles</button><span class="status" id="liveStatus">Requires a configured market-data API key.</span></div>
+<div id="liveResult" class="result" style="margin-top:16px"></div>
+</section>
+<section class="card span4">
+<h2>Market data connection</h2><div class="metric"><small>Provider</small><strong>Twelve Data</strong></div><p class="muted" style="font-size:13px">The API key is stored on your backend, not in the browser.</p>
+<div class="notice">Add <b>TWELVE_DATA_API_KEY</b> to <code>backend/.env</code>, then restart the server. Provider coverage, delay and request limits depend on your plan.</div>
+</section>
+<section class="card span6">
+<h2>Upload a chart screenshot</h2><label>TradingView or MT4 image</label><input type="file" id="shot" accept="image/*" onchange="showPreview(event)"><img id="preview" alt="Uploaded chart preview">
+<div class="notice" style="margin-top:12px">Screenshot preview is active. Automatic visual chart interpretation is not yet connected in this MVP. Use OHLC CSV analysis below for actual calculations; do not treat the screenshot itself as analysed.</div>
+</section>
+<section class="card span6">
+<h2>Analyse candle data (CSV)</h2><label>Upload OHLC CSV</label><input type="file" id="csv" accept=".csv,text/csv"><div class="row" style="margin-top:12px"><button onclick="analyseCSV()">Analyse CSV</button><button class="secondary" onclick="downloadSample()">Get sample CSV</button></div><div id="csvResult" class="result" style="margin-top:14px"></div>
+</section>
+<section class="card span12">
+<h2>Multi-timeframe comparison</h2><p class="muted" style="font-size:13px">Upload one OHLC CSV per timeframe. Files should contain at least 20 candles and be chronological.</p>
+<div class="row"><div><label>D1 CSV</label><input type="file" class="mtf" data-tf="D1" accept=".csv"></div><div><label>H4 CSV</label><input type="file" class="mtf" data-tf="H4" accept=".csv"></div><div><label>H1 CSV</label><input type="file" class="mtf" data-tf="H1" accept=".csv"></div></div>
+<div class="row"><div><label>M30 CSV</label><input type="file" class="mtf" data-tf="M30" accept=".csv"></div><div><label>M15 CSV</label><input type="file" class="mtf" data-tf="M15" accept=".csv"></div><div><label>M5 CSV</label><input type="file" class="mtf" data-tf="M5" accept=".csv"></div></div>
+<button style="margin-top:13px" onclick="compareTF()">Compare uploaded timeframes</button><div id="mtfResult" style="margin-top:15px"></div>
+</section>
+<section class="card span12">
+<h2>Global intelligence connections</h2><div class="grid">
+<div class="metric span4"><small>Economic calendar</small><strong>Not connected</strong><div class="sub">Needs a licensed calendar feed</div></div>
+<div class="metric span4"><small>Central-bank news</small><strong>Not connected</strong><div class="sub">Source integration planned</div></div>
+<div class="metric span4"><small>Positioning & sentiment</small><strong>Not connected</strong><div class="sub">CFTC / sentiment feeds planned</div></div>
+</div><p class="notice" style="margin-top:13px">This dashboard will only label data as live when a connected source actually returns it. No global trader consensus is assumed.</p>
+</section>
+<section class="card span12"><h2>How to read the analysis</h2><p class="muted" style="font-size:13px">Bullish / bearish labels are heuristic evidence summaries, not guaranteed predictions. A detected candle pattern is not a trade by itself; location, trend, volatility, timeframe agreement and risk/reward matter. Backtest before risking money.</p></section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+async function checkHealth(){try{let r=await fetch('/api/health');let d=await r.json();$('health').textContent=d.live_data_configured?'Backend online · Live data key configured':'Backend online · Demo/CSV mode';$('health').className='status ok'}catch(e){$('health').textContent='Backend unavailable';$('health').className='status err'}}
+function showPreview(e){const f=e.target.files[0];if(!f)return;const img=$('preview');img.src=URL.createObjectURL(f);img.style.display='block'}
+function biasClass(b){return b==='BULLISH'?'bull':b==='BEARISH'?'bear':'neutral'}
+function renderAnalysis(d){let pats=(d.patterns||[]).map(p=>`<div class="pattern"><b>${p.name}</b><span class="${p.bias==='bullish'?'bull':p.bias==='bearish'?'bear':'neutral'}">${p.bias}</span></div>`).join('')||'<p class="muted">No listed pattern detected on the latest candle(s).</p>';
+return `<div class="row"><div class="metric"><small>Overall bias</small><strong class="${biasClass(d.bias)}">${d.bias}</strong></div><div class="metric"><small>Market structure</small><strong style="font-size:14px">${d.structure}</strong></div><div class="metric"><small>Latest close</small><strong>${d.last_close}</strong></div></div>
+<h3 style="font-size:14px;margin:16px 0 6px">Candlestick patterns</h3>${pats}
+<h3 style="font-size:14px;margin:16px 0 6px">Indicators</h3><table><tr><th>Indicator</th><th>Value</th></tr>${Object.entries(d.indicators||{}).map(([k,v])=>`<tr><td>${k}</td><td>${v??'n/a'}</td></tr>`).join('')}</table>
+<h3 style="font-size:14px;margin:16px 0 6px">Evidence</h3><ul>${(d.evidence||[]).map(x=>`<li>${x}</li>`).join('')}</ul>
+<div class="notice">${d.disclaimer||'Educational analysis only.'}</div>`}
+async function loadLive(){let b=$('liveBtn');b.disabled=true;$('liveStatus').textContent='Requesting market candles…';try{let q=new URLSearchParams({symbol:$('symbol').value,interval:$('interval').value});let r=await fetch('/api/market?'+q);let d=await r.json();if(!r.ok)throw Error(d.detail||'Request failed');$('liveResult').innerHTML=`<div class="sub">Source: ${d.source} · ${d.symbol} · ${d.interval} · Latest candle: ${d.latest_candle_time}</div>`+renderAnalysis(d);$('liveStatus').textContent=d.provider_note||'Data received'}catch(e){$('liveStatus').textContent=e.message;$('liveStatus').className='status err'}finally{b.disabled=false}}
+async function analyseCSV(){const f=$('csv').files[0];if(!f){$('csvResult').textContent='Choose a CSV file first.';return}let fd=new FormData();fd.append('file',f);$('csvResult').textContent='Analysing candles…';try{let r=await fetch('/api/analyse-csv',{method:'POST',body:fd});let d=await r.json();if(!r.ok)throw Error(d.detail||'Analysis failed');$('csvResult').innerHTML=renderAnalysis(d)}catch(e){$('csvResult').textContent=e.message}}
+async function compareTF(){let files=[...document.querySelectorAll('.mtf')].filter(x=>x.files[0]);if(!files.length){$('mtfResult').textContent='Upload at least one timeframe CSV.';return}let fd=new FormData();files.forEach(x=>fd.append('files',x.files[0],x.dataset.tf+'.csv'));$('mtfResult').textContent='Comparing timeframes…';try{let r=await fetch('/api/multi-timeframe',{method:'POST',body:fd});let d=await r.json();if(!r.ok)throw Error(d.detail||'Comparison failed');let rows=Object.entries(d.timeframes).map(([tf,v])=>`<tr><td>${tf}</td><td class="${biasClass(v.bias)}">${v.bias||v.error}</td><td>${v.structure||'—'}</td></tr>`).join('');$('mtfResult').innerHTML=`<div class="metric"><small>Simple timeframe consensus</small><strong class="${biasClass(d.consensus)}">${d.consensus}</strong></div><table style="margin-top:12px"><tr><th>Timeframe</th><th>Bias</th><th>Structure</th></tr>${rows}</table><p class="notice">${d.note}</p>`}catch(e){$('mtfResult').textContent=e.message}}
+function downloadSample(){let rows=['datetime,open,high,low,close,volume'];let p=1.08;for(let i=0;i<80;i++){let o=p;let drift=.00025+Math.sin(i/5)*.0001;let c=o+drift+(Math.sin(i*2)*.0002);let h=Math.max(o,c)+.00025;let l=Math.min(o,c)-.0002;rows.push(`2026-01-${String(Math.floor(i/24)+1).padStart(2,'0')} ${String(i%24).padStart(2,'0')}:00,${o.toFixed(5)},${h.toFixed(5)},${l.toFixed(5)},${c.toFixed(5)},100`);p=c}let blob=new Blob([rows.join('\\n')],{type:'text/csv'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sample_ohlc.csv';a.click();URL.revokeObjectURL(a.href)}
+checkHealth();
+</script></body></html>
